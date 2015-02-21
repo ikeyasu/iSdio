@@ -24,7 +24,7 @@ uint8_t* put_T_arg(uint8_t* p, const char* value) {
     p = put_T(p, value);              // data
     uint32_t len = p - orig - sizeof(uint32_t); 
     put_T(orig, len);                 // write length.
-    for (int i = 0; i < ((4 - (len & 3)) & 3); ++i) { // padding
+    for (uint32_t i = 0; i < ((4 - (len & 3)) & 3); ++i) { // padding
         *p++ = 0;
     }
     return p;

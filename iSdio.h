@@ -56,7 +56,7 @@ template <typename T>
 uint8_t* put_T_arg(uint8_t* p, T value) {
     p = put_T(p, (uint32_t)sizeof(T)); // length
     p = put_T(p, value);                      // data
-    for (uint8_t i = 0; i < (4 - sizeof(T)) & 0x3; ++i) { // padding
+    for (uint8_t i = 0; i < ((4 - sizeof(T)) & 0x3); ++i) { // padding
         *p++ = 0;
     }
     return p;
