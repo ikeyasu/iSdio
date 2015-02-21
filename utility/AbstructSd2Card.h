@@ -124,43 +124,35 @@ uint8_t const SD_CARD_TYPE_SDHC = 3;
 
 class AbstructSd2Card {
  public:
-  AbstructSd2Card(void) {}
-  uint32_t cardSize(void) {return 0;}
-  uint8_t erase(uint32_t firstBlock, uint32_t lastBlock) {return 0;}
-  uint8_t eraseSingleBlockEnable(void) {return 0;}
-  uint8_t errorCode(void) const {return 0;}
-  uint8_t errorData(void) const {return 0;}
-  uint8_t init(uint8_t sckRateID, uint8_t chipSelectPin) {return 0;}
-  uint8_t init(void) {
-    return 0;
-  }
-  uint8_t init(uint8_t sckRateID) {
-    return 0;
-  }
-  void partialBlockRead(uint8_t value) {}
-  uint8_t partialBlockRead(void) const {return 0;}
-  uint8_t readBlock(uint32_t block, uint8_t* dst) {return 0;}
-  uint8_t readData(uint32_t block,
-          uint16_t offset, uint16_t count, uint8_t* dst) {return 0;}
-  uint8_t readCID(cid_t* cid) {return 0;}
-  /**
-   * Read a cards CSD register. The CSD contains Card-Specific Data that
-   * provides information regarding access to the card's contents. */
-  uint8_t readCSD(csd_t* csd) {return 0;}
-  void readEnd(void) {}
-  uint8_t setSckRate(uint8_t sckRateID) {return 0;}
-  /** Return the card type: SD V1, SD V2 or SDHC */
-  uint8_t type(void) const {return 0;}
-  uint8_t writeBlock(uint32_t blockNumber, const uint8_t* src) {return 0;}
-  uint8_t writeData(const uint8_t* src) {return 0;}
-  uint8_t writeStart(uint32_t blockNumber, uint32_t eraseCount) {return 0;}
-  uint8_t writeStop(void) {return 0;}
+  virtual uint32_t cardSize(void) = 0;
+  virtual uint8_t erase(uint32_t firstBlock, uint32_t lastBlock) = 0;
+  virtual uint8_t eraseSingleBlockEnable(void) = 0;
+  virtual uint8_t errorCode(void) = 0;
+  virtual uint8_t errorData(void) = 0;
+  virtual uint8_t init(uint8_t sckRateID, uint8_t chipSelectPin) = 0;
+  virtual uint8_t init(void) = 0;
+  virtual uint8_t init(uint8_t sckRateID) = 0;
 
-  uint8_t readExtDataPort(uint8_t mio, uint8_t func, uint16_t addr, uint8_t* dst) {return 0;}
-  uint8_t readExtMemory(uint8_t mio, uint8_t func, uint32_t addr, uint16_t count, uint8_t* dst) {return 0;}
-  uint8_t writeExtDataPort(uint8_t mio, uint8_t func, uint16_t addr, const uint8_t* src) {return 0;}
-  uint8_t writeExtMemory(uint8_t mio, uint8_t func, uint32_t addr, uint16_t count, const uint8_t* src) {return 0;}
-  uint8_t writeExtMask(uint8_t mio, uint8_t func, uint32_t addr, uint8_t mask, const uint8_t* src) {return 0;}
+  virtual void partialBlockRead(uint8_t value) = 0;
+  virtual uint8_t partialBlockRead(void) const = 0;
+  virtual uint8_t readBlock(uint32_t block, uint8_t* dst) = 0;
+  virtual uint8_t readData(uint32_t block,
+          uint16_t offset, uint16_t count, uint8_t* dst) = 0;
+  virtual uint8_t readCID(cid_t* cid) = 0;
+  virtual uint8_t readCSD(csd_t* csd) = 0;
+  virtual void readEnd(void) = 0;
+  virtual uint8_t setSckRate(uint8_t sckRateID) = 0;
+  virtual uint8_t type(void) const = 0;
+  virtual uint8_t writeBlock(uint32_t blockNumber, const uint8_t* src) = 0;
+  virtual uint8_t writeData(const uint8_t* src) = 0;
+  virtual uint8_t writeStart(uint32_t blockNumber, uint32_t eraseCount) = 0;
+  virtual uint8_t writeStop(void) = 0;
+
+  virtual uint8_t readExtDataPort(uint8_t mio, uint8_t func, uint16_t addr, uint8_t* dst) = 0;
+  virtual uint8_t readExtMemory(uint8_t mio, uint8_t func, uint32_t addr, uint16_t count, uint8_t* dst) = 0;
+  virtual uint8_t writeExtDataPort(uint8_t mio, uint8_t func, uint16_t addr, const uint8_t* src) = 0;
+  virtual uint8_t writeExtMemory(uint8_t mio, uint8_t func, uint32_t addr, uint16_t count, const uint8_t* src) = 0;
+  virtual uint8_t writeExtMask(uint8_t mio, uint8_t func, uint32_t addr, uint8_t mask, const uint8_t* src) = 0;
 
 };
 #endif

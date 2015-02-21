@@ -64,9 +64,9 @@ class Sd2Card : AbstructSd2Card {
   /**
    * \return error code for last error. See Sd2Card.h for a list of error codes.
    */
-  uint8_t errorCode(void) const {return errorCode_;}
+  uint8_t errorCode(void);
   /** \return error data for last error. */
-  uint8_t errorData(void) const {return status_;}
+  uint8_t errorData(void);
   /**
    * Initialize an SD flash memory card with default clock rate and chip
    * select pin.  See sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin).

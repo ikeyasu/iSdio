@@ -199,6 +199,23 @@ uint8_t Sd2Card::eraseSingleBlockEnable(void) {
   csd_t csd;
   return readCSD(&csd) ? csd.v1.erase_blk_en : 0;
 }
+
+//------------------------------------------------------------------------------
+/**
+ * \return error code for last error. See Sd2Card.h for a list of error codes.
+ */
+uint8_t Sd2Card::errorCode(void) {
+  return errorCode_;
+}
+
+//------------------------------------------------------------------------------
+/**
+ * \return error data for last error.
+ */
+uint8_t Sd2Card::errorData(void) {
+  return status_;
+}
+
 //------------------------------------------------------------------------------
 /**
  * Initialize an SD flash memory card.
