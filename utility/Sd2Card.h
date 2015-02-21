@@ -54,7 +54,7 @@ uint8_t const  SPI_SCK_PIN = SCK_PIN;
  * \class Sd2Card
  * \brief Raw access to SD and SDHC flash memory cards.
  */
-class Sd2Card : AbstructSd2Card {
+class Sd2Card : public AbstructSd2Card {
  public:
   /** Construct an instance of Sd2Card. */
   Sd2Card(void) : errorCode_(0), inBlock_(0), partialBlockRead_(0), type_(0) {}
