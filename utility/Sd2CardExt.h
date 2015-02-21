@@ -1,4 +1,6 @@
 /* Arduino Sdio Library
+ * Copyright (C) 2014 by Yasuki Ikeuchi
+ *
  * Copyright (C) 2014 by Munehiro Doi
  *
  * This file is an iSDIO extension of the Arduino Sd2Card Library
@@ -26,21 +28,9 @@
 //------------------------------------------------------------------------------
 /**
  * \class Sd2CardExt
- * \brief Extension for raw access to SDHC flash memory cards.
+ * \brief This class is obsolete. Please use Sd2Card
  */
 class Sd2CardExt : public Sd2Card {
- public:
-  /** Construct an instance of Sd2Card. */
-  Sd2CardExt(void) : Sd2Card() {}
-
-  uint8_t readExtDataPort(uint8_t mio, uint8_t func, uint16_t addr, uint8_t* dst);
-  uint8_t readExtMemory(uint8_t mio, uint8_t func, uint32_t addr, uint16_t count, uint8_t* dst);
-  uint8_t writeExtDataPort(uint8_t mio, uint8_t func, uint16_t addr, const uint8_t* src);
-  uint8_t writeExtMemory(uint8_t mio, uint8_t func, uint32_t addr, uint16_t count, const uint8_t* src);
-  uint8_t writeExtMask(uint8_t mio, uint8_t func, uint32_t addr, uint8_t mask, const uint8_t* src);
-protected:
-  uint8_t readExt(uint32_t arg, uint8_t* src, uint16_t count);
-  uint8_t writeExt(uint32_t arg, const uint8_t* src, uint16_t count);
 };
 
 #endif  // Sd2CardExt_h

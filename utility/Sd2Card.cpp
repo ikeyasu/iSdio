@@ -28,7 +28,7 @@ static void spiSend(uint8_t b) {
   while (!(SPSR & (1 << SPIF)));
 }
 /** Receive a byte from the card */
-static  uint8_t spiRec(void) {
+static  uint8_t spiReceive(void) {
   spiSend(0XFF);
   return SPDR;
 }
@@ -38,7 +38,7 @@ static  uint8_t spiRec(void) {
 #define nop asm volatile ("nop\n\t")
 //------------------------------------------------------------------------------
 /** Soft SPI receive */
-uint8_t spiRec(void) {
+uint8_t spiReceive(void) {
   uint8_t data = 0;
   // no interrupts during byte receive - about 8 us
   cli();
@@ -112,7 +112,7 @@ uint8_t Sd2Card::cardCommand(uint8_t cmd, uint32_t arg) {
   spiSend(crc);
 
   // wait for response
-  for (uint8_t i = 0; ((status_ = spiRec()) & 0X80) && i != 0XFF; i++);
+  for (uint8_t i = 0; ((status_ = spiReceive()) & 0X80) && i != 0XFF; i++);
   return status_;
 }
 //------------------------------------------------------------------------------
@@ -251,7 +251,7 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
     type(SD_CARD_TYPE_SD1);
   } else {
     // only need last byte of r7 response
-    for (uint8_t i = 0; i < 4; i++) status_ = spiRec();
+    for (uint8_t i = 0; i < 4; i++) status_ = spiReceive();
     if (status_ != 0XAA) {
       error(SD_CARD_ERROR_CMD8);
       goto fail;
@@ -274,9 +274,9 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
       error(SD_CARD_ERROR_CMD58);
       goto fail;
     }
-    if ((spiRec() & 0XC0) == 0XC0) type(SD_CARD_TYPE_SDHC);
+    if ((spiReceive() & 0XC0) == 0XC0) type(SD_CARD_TYPE_SDHC);
     // discard rest of ocr - contains allowed voltage range
-    for (uint8_t i = 0; i < 3; i++) spiRec();
+    for (uint8_t i = 0; i < 3; i++) spiReceive();
   }
   chipSelectHigh();
 
@@ -378,11 +378,11 @@ uint8_t Sd2Card::readData(uint32_t block,
 
   // skip data before offset
   for (;offset_ < offset; offset_++) {
-    spiRec();
+    spiReceive();
   }
   // transfer data
   for (uint16_t i = 0; i < count; i++) {
-    dst[i] = spiRec();
+    dst[i] = spiReceive();
   }
 #endif  // OPTIMIZE_HARDWARE_SPI
 
@@ -412,7 +412,7 @@ void Sd2Card::readEnd(void) {
     // wait for last crc byte
     while (!(SPSR & (1 << SPIF)));
 #else  // OPTIMIZE_HARDWARE_SPI
-    while (offset_++ < 514) spiRec();
+    while (offset_++ < 514) spiReceive();
 #endif  // OPTIMIZE_HARDWARE_SPI
     chipSelectHigh();
     inBlock_ = 0;
@@ -428,9 +428,9 @@ uint8_t Sd2Card::readRegister(uint8_t cmd, void* buf) {
   }
   if (!waitStartBlock()) goto fail;
   // transfer data
-  for (uint16_t i = 0; i < 16; i++) dst[i] = spiRec();
-  spiRec();  // get first crc byte
-  spiRec();  // get second crc byte
+  for (uint16_t i = 0; i < 16; i++) dst[i] = spiReceive();
+  spiReceive();  // get first crc byte
+  spiReceive();  // get second crc byte
   chipSelectHigh();
   return true;
 
@@ -472,7 +472,7 @@ uint8_t Sd2Card::setSckRate(uint8_t sckRateID) {
 uint8_t Sd2Card::waitNotBusy(uint16_t timeoutMillis) {
   uint16_t t0 = millis();
   do {
-    if (spiRec() == 0XFF) return true;
+    if (spiReceive() == 0XFF) return true;
   }
   while (((uint16_t)millis() - t0) < timeoutMillis);
   return false;
@@ -481,7 +481,7 @@ uint8_t Sd2Card::waitNotBusy(uint16_t timeoutMillis) {
 /** Wait for start block token */
 uint8_t Sd2Card::waitStartBlock(void) {
   uint16_t t0 = millis();
-  while ((status_ = spiRec()) == 0XFF) {
+  while ((status_ = spiReceive()) == 0XFF) {
     if (((uint16_t)millis() - t0) > SD_READ_TIMEOUT) {
       error(SD_CARD_ERROR_READ_TIMEOUT);
       goto fail;
@@ -529,7 +529,7 @@ uint8_t Sd2Card::writeBlock(uint32_t blockNumber, const uint8_t* src) {
     goto fail;
   }
   // response is r2 so get and check two bytes for nonzero
-  if (cardCommand(CMD13, 0) || spiRec()) {
+  if (cardCommand(CMD13, 0) || spiReceive()) {
     error(SD_CARD_ERROR_WRITE_PROGRAMMING);
     goto fail;
   }
@@ -579,7 +579,7 @@ uint8_t Sd2Card::writeData(uint8_t token, const uint8_t* src) {
   spiSend(0xff);  // dummy crc
   spiSend(0xff);  // dummy crc
 
-  status_ = spiRec();
+  status_ = spiReceive();
   if ((status_ & DATA_RES_MASK) != DATA_RES_ACCEPTED) {
     error(SD_CARD_ERROR_WRITE);
     chipSelectHigh();
@@ -641,4 +641,214 @@ uint8_t Sd2Card::writeStop(void) {
   error(SD_CARD_ERROR_STOP_TRAN);
   chipSelectHigh();
   return false;
+}
+
+/* Arduino Sdio Library
+ * Copyright (C) 2014 by Munehiro Doi
+ *
+ * This file is an SD extension of the Arduino Sd2Card Library
+ * Copyright (C) 2009 by William Greiman
+ *
+ * This Library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This Library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with the Arduino Sd2Card Library.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+//------------------------------------------------------------------------------
+// SD extension commands
+/** EXTENSION READ - Extension Register Read Command (Single Block) */
+uint8_t const CMD48 = 0X30;
+/** EXTENSION WRITE - Extension Register Write Command (Single Block) */
+uint8_t const CMD49 = 0X31;
+//------------------------------------------------------------------------------
+// SD extension error codes.
+/** card returned an error response for CMD48 (read extension block) */
+uint8_t const SD_CARD_ERROR_CMD48 = 0X80;
+/** card returned an error response for CMD49 (write extension block) */
+uint8_t const SD_CARD_ERROR_CMD49 = 0X81;
+//------------------------------------------------------------------------------
+
+/** Perform Extention Read. */
+uint8_t Sd2Card::readExt(uint32_t arg, uint8_t* dst, uint16_t count) {
+  uint16_t i;
+
+  // send command and argument.
+  if (cardCommand(CMD48, arg)) {
+    error(SD_CARD_ERROR_CMD48);
+    goto fail;
+  }
+ 
+  // wait for start block token.
+  if (!waitStartBlock()) {
+    goto fail;
+  }
+
+  // receive data
+  for (i = 0; i < count; ++i) {
+    dst[i] = spiReceive();
+  }
+ 
+  // skip dummy bytes and 16-bit crc.
+  for (; i < 514; ++i) {
+    spiReceive();
+  }
+
+  chipSelectHigh();
+  spiSend(0xFF); // dummy clock to force FlashAir finish the command.
+  return true;
+
+ fail:
+  chipSelectHigh();
+  return false;
+}
+//------------------------------------------------------------------------------
+/** Perform Extention Write. */
+uint8_t Sd2Card::writeExt(uint32_t arg, const uint8_t* src, uint16_t count) {
+  uint16_t i;
+  uint8_t status;
+ 
+  // send command and argument.
+  if (cardCommand(CMD49, arg)) {
+    error(SD_CARD_ERROR_CMD49);
+    goto fail;
+  }
+
+  // send start block token.
+  spiSend(DATA_START_BLOCK);
+
+  // send data
+  for (i = 0; i < count; ++i) {
+    spiSend(src[i]);
+  }
+
+  // send dummy bytes until 512 bytes.
+  for (; i < 512; ++i) {
+    spiSend(0xFF);
+  }
+
+  // dummy 16-bit crc
+  spiSend(0xFF);
+  spiSend(0xFF);
+
+  // wait a data response token
+  status = spiReceive();
+  if ((status & DATA_RES_MASK) != DATA_RES_ACCEPTED) {
+    error(SD_CARD_ERROR_WRITE);
+    goto fail;
+  }
+
+  // wait for flash programming to complete
+  if (!waitNotBusy(SD_WRITE_TIMEOUT)) {
+    error(SD_CARD_ERROR_WRITE_TIMEOUT);
+    goto fail;
+  }
+
+  chipSelectHigh();
+  return true;
+
+ fail:
+  chipSelectHigh();
+  return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+ * Read a 512 byte data port in an extension register space.
+ *
+ * \return The value one, true, is returned for success and
+ * the value zero, false, is returned for failure.
+ */
+uint8_t Sd2Card::readExtDataPort(uint8_t mio, uint8_t func, 
+    uint16_t addr, uint8_t* dst) {
+  uint32_t arg = 
+      (((uint32_t)mio & 0x1) << 31) | 
+	  (mio ? (((uint32_t)func & 0x7) << 28) : (((uint32_t)func & 0xF) << 27)) |
+	  (((uint32_t)addr & 0x1FE00) << 9);
+
+  return readExt(arg, dst, 512);
+}
+//------------------------------------------------------------------------------
+/**
+ * Read an extension register space.
+ *
+ * \return The value one, true, is returned for success and
+ * the value zero, false, is returned for failure.
+ */
+uint8_t Sd2Card::readExtMemory(uint8_t mio, uint8_t func, 
+    uint32_t addr, uint16_t count, uint8_t* dst) {
+  uint32_t offset = addr & 0x1FF;
+  if (offset + count > 512) count = 512 - offset;
+ 
+  if (count == 0) return true;
+ 
+  uint32_t arg = 
+      (((uint32_t)mio & 0x1) << 31) | 
+	  (mio ? (((uint32_t)func & 0x7) << 28) : (((uint32_t)func & 0xF) << 27)) |
+	  ((addr & 0x1FFFF) << 9) |
+	  ((count - 1) & 0x1FF);
+
+  return readExt(arg, dst, count);
+}
+
+//------------------------------------------------------------------------------
+/**
+ * Write a 512 byte data port into an extension register space.
+ *
+ * \return The value one, true, is returned for success and
+ * the value zero, false, is returned for failure.
+ */
+uint8_t Sd2Card::writeExtDataPort(uint8_t mio, uint8_t func, 
+    uint16_t addr, const uint8_t* src) {
+  uint32_t arg =
+      (((uint32_t)mio & 0x1) << 31) | 
+	  (mio ? (((uint32_t)func & 0x7) << 28) : (((uint32_t)func & 0xF) << 27)) |
+	  (((uint32_t)addr & 0x1FE00) << 9);
+
+  return writeExt(arg, src, 512);
+}
+//------------------------------------------------------------------------------
+/**
+ * Write an extension register space.
+ *
+ * \return The value one, true, is returned for success and
+ * the value zero, false, is returned for failure.
+ */
+uint8_t Sd2Card::writeExtMemory(uint8_t mio, uint8_t func, 
+    uint32_t addr, uint16_t count, const uint8_t* src) {
+  uint32_t arg =
+      (((uint32_t)mio & 0x1) << 31) | 
+	  (mio ? (((uint32_t)func & 0x7) << 28) : (((uint32_t)func & 0xF) << 27)) |
+	  ((addr & 0x1FFFF) << 9) |
+	  ((count - 1) & 0x1FF);
+
+  return writeExt(arg, src, count);
+}
+
+//------------------------------------------------------------------------------
+/**
+ * Writes a byte-data with mask into an extension register space.
+ *
+ * \return The value one, true, is returned for success and
+ * the value zero, false, is returned for failure.
+ */
+uint8_t Sd2Card::writeExtMask(uint8_t mio, uint8_t func, 
+    uint32_t addr, uint8_t mask, const uint8_t* src) {
+  uint32_t arg =
+      (((uint32_t)mio & 0x1) << 31) | 
+	  (mio ? (((uint32_t)func & 0x7) << 28) : (((uint32_t)func & 0xF) << 27)) |
+	  (0x1 << 26) |
+	  ((addr & 0x1FFFF) << 9) |
+	  mask;
+
+  return writeExt(arg, src, 1);
 }
