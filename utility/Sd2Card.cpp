@@ -21,6 +21,54 @@
 #include "Sd2Card.h"
 //------------------------------------------------------------------------------
 #ifndef SOFTWARE_SPI
+#ifndef SPCR // ATtiny
+// functions for hardware SPI
+/** Send a byte to the card */
+static void spiSend(uint8_t d) {
+  USIDR = d;
+  byte v1 = bit(USIWM0) | bit(USITC);
+  byte v2 = bit(USIWM0) | bit(USITC) | bit(USICLK);
+#if F_CPU <= 5000000
+  // only unroll if resulting clock stays under 2.5 MHz
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+#else
+  for (uint8_t i = 0; i < 8; ++i) {
+      USICR = v1;
+      USICR = v2;
+  }
+#endif
+}
+/** Receive a byte from the card */
+static  uint8_t spiReceive(void) {
+  USIDR = 0xFF;
+  byte v1 = bit(USIWM0) | bit(USITC);
+  byte v2 = bit(USIWM0) | bit(USITC) | bit(USICLK);
+#if F_CPU <= 5000000
+  // only unroll if resulting clock stays under 2.5 MHz
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+  USICR = v1; USICR = v2;
+#else
+  for (uint8_t i = 0; i < 8; ++i) {
+      USICR = v1;
+      USICR = v2;
+  }
+#endif
+    return USIDR;
+}
+#else
 // functions for hardware SPI
 /** Send a byte to the card */
 static void spiSend(uint8_t b) {
@@ -32,6 +80,7 @@ static  uint8_t spiReceive(void) {
   spiSend(0XFF);
   return SPDR;
 }
+#endif
 #else  // SOFTWARE_SPI
 //------------------------------------------------------------------------------
 /** nop to tune soft SPI timing */
@@ -242,6 +291,7 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
   pinMode(SPI_SCK_PIN, OUTPUT);
 
 #ifndef SOFTWARE_SPI
+#ifdef SPCR
   // SS must be in output mode even it is not chip select
   pinMode(SS_PIN, OUTPUT);
   digitalWrite(SS_PIN, HIGH); // disable any SPI device using hardware SS pin
@@ -249,6 +299,16 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
   SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR1) | (1 << SPR0);
   // clear double speed
   SPSR &= ~(1 << SPI2X);
+#else
+    bitSet(SS_PORT, SS_BIT);
+    bitSet(SS_DDR, SS_BIT);
+    digitalWrite(SS_PIN, 1);
+    pinMode(SS_PIN, OUTPUT);
+    pinMode(MOSI_PIN, OUTPUT);
+    pinMode(MISO_PIN, INPUT);
+    pinMode(SCK_PIN, OUTPUT);
+    USICR = bit(USIWM0);
+#endif
 #endif  // SOFTWARE_SPI
 
   // must supply min of 74 clock cycles with CS high.
@@ -297,11 +357,11 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
   }
   chipSelectHigh();
 
-#ifndef SOFTWARE_SPI
+#if !defined(SOFTWARE_SPI) && defined(SPCR)
   return setSckRate(sckRateID);
-#else  // SOFTWARE_SPI
+#else
   return true;
-#endif  // SOFTWARE_SPI
+#endif
 
  fail:
   chipSelectHigh();
@@ -468,6 +528,7 @@ uint8_t Sd2Card::readRegister(uint8_t cmd, void* buf) {
  * \return The value one, true, is returned for success and the value zero,
  * false, is returned for an invalid value of \a sckRateID.
  */
+#if !defined(SOFTWARE_SPI) && defined(SPCR)
 uint8_t Sd2Card::setSckRate(uint8_t sckRateID) {
   if (sckRateID > 6) {
     error(SD_CARD_ERROR_SCK_RATE);
@@ -484,6 +545,7 @@ uint8_t Sd2Card::setSckRate(uint8_t sckRateID) {
     | (sckRateID & 2 ? (1 << SPR0) : 0);
   return true;
 }
+#endif
 //------------------------------------------------------------------------------
 // wait for card to go not busy
 uint8_t Sd2Card::waitNotBusy(uint16_t timeoutMillis) {

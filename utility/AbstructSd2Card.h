@@ -21,7 +21,6 @@
 #define AbstructSd2Card_h
 
 #include "SdInfo.h"
-//#include "Sd2PinMap.h"
 
 /** Set SCK to max rate of F_CPU/2. See Sd2Card::setSckRate(). */
 uint8_t const SPI_FULL_SPEED = 0;
@@ -41,11 +40,9 @@ uint8_t const SPI_QUARTER_SPEED = 2;
 //------------------------------------------------------------------------------
 #if MEGA_SOFT_SPI && (defined(__AVR_ATmega1280__)||defined(__AVR_ATmega2560__))
 #define SOFTWARE_SPI
-#endif  // MEGA_SOFT_SPI
 //------------------------------------------------------------------------------
 // SPI pin definitions
 //
-#ifdef SOFTWARE_SPI
 // define software SPI pins so Mega can use unmodified GPS Shield
 /** SPI chip select pin */
 uint8_t const SD_CHIP_SELECT_PIN = 10;
@@ -55,7 +52,17 @@ uint8_t const SPI_MOSI_PIN = 11;
 uint8_t const SPI_MISO_PIN = 12;
 /** SPI Clock pin */
 uint8_t const SPI_SCK_PIN = 13;
-#endif  // SOFTWARE_SPI
+#endif  // MEGA_SOFT_SPI
+
+/*
+#if defined(__AVR_ATtiny85__)
+#define SOFTWARE_SPI
+uint8_t const SD_CHIP_SELECT_PIN = 0;
+uint8_t const SPI_MOSI_PIN = 1;
+uint8_t const SPI_MISO_PIN = 2;
+uint8_t const SPI_SCK_PIN = 3;
+#endif
+*/
 //------------------------------------------------------------------------------
 /** Protect block zero from write if nonzero */
 #define SD_PROTECT_BLOCK_ZERO 1
@@ -141,7 +148,9 @@ class AbstructSd2Card {
   virtual uint8_t readCID(cid_t* cid) = 0;
   virtual uint8_t readCSD(csd_t* csd) = 0;
   virtual void readEnd(void) = 0;
+#if !defined(SOFTWARE_SPI) && defined(SPCR)
   virtual uint8_t setSckRate(uint8_t sckRateID) = 0;
+#endif
   virtual uint8_t type(void) const = 0;
   virtual uint8_t writeBlock(uint32_t blockNumber, const uint8_t* src) = 0;
   virtual uint8_t writeData(const uint8_t* src) = 0;

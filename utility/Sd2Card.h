@@ -45,7 +45,9 @@ uint8_t const  SPI_MISO_PIN = MISO_PIN;
 /** SPI Clock pin */
 uint8_t const  SPI_SCK_PIN = SCK_PIN;
 /** optimize loops for hardware SPI */
+#ifdef SPCR // not ATtiny
 #define OPTIMIZE_HARDWARE_SPI
+#endif
 
 #endif
 
@@ -103,7 +105,9 @@ class Sd2Card : public AbstructSd2Card {
     return readRegister(CMD9, csd);
   }
   void readEnd(void);
+#if !defined(SOFTWARE_SPI) && defined(SPCR)
   uint8_t setSckRate(uint8_t sckRateID);
+#endif
   /** Return the card type: SD V1, SD V2 or SDHC */
   uint8_t type(void) const {return type_;}
   uint8_t writeBlock(uint32_t blockNumber, const uint8_t* src);

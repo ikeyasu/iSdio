@@ -267,6 +267,31 @@ static const pin_map_t digitalPinMap[] = {
   {&DDRF, &PINF, &PORTF, 7}   // F7 45
 };
 //------------------------------------------------------------------------------
+#elif defined(__AVR_ATtiny85__)
+
+// Two Wire (aka I2C) ports
+// uint8_t const SDA_PIN = 5;
+// uint8_t const SCL_PIN = 6;
+
+// SPI port
+uint8_t const SS_PIN = 1;
+uint8_t const MOSI_PIN = 5;
+uint8_t const MISO_PIN = 4;
+uint8_t const SCK_PIN = 6;
+
+#define SS_DDR      DDRB
+#define SS_PORT     PORTB
+#define SS_BIT      1
+
+static const pin_map_t digitalPinMap[] = {
+  {&DDRB, &PINB, &PORTB, 0},  // B0  8
+  {&DDRB, &PINB, &PORTB, 1},  // B1  9
+  {&DDRB, &PINB, &PORTB, 2},  // B2 10
+  {&DDRB, &PINB, &PORTB, 3},  // B3 11
+  {&DDRB, &PINB, &PORTB, 4},  // B4 12
+  {&DDRB, &PINB, &PORTB, 5},  // B5 13
+};
+//------------------------------------------------------------------------------
 #else  // defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 // 168 and 328 Arduinos
 
