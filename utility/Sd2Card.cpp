@@ -164,6 +164,7 @@ uint8_t Sd2Card::cardCommand(uint8_t cmd, uint32_t arg) {
   for (uint8_t i = 0; ((status_ = spiReceive()) & 0X80) && i != 0XFF; i++);
   return status_;
 }
+#ifndef MEMORY_SAVING
 //------------------------------------------------------------------------------
 /**
  * Determine the size of an SD flash memory card.
@@ -190,6 +191,7 @@ uint32_t Sd2Card::cardSize(void) {
     return 0;
   }
 }
+#endif
 //------------------------------------------------------------------------------
 void Sd2Card::chipSelectHigh(void) {
   digitalWrite(chipSelectPin_, HIGH);
@@ -198,6 +200,7 @@ void Sd2Card::chipSelectHigh(void) {
 void Sd2Card::chipSelectLow(void) {
   digitalWrite(chipSelectPin_, LOW);
 }
+#ifndef MEMORY_SAVING
 //------------------------------------------------------------------------------
 /** Erase a range of blocks.
  *
@@ -248,7 +251,7 @@ uint8_t Sd2Card::eraseSingleBlockEnable(void) {
   csd_t csd;
   return readCSD(&csd) ? csd.v1.erase_blk_en : 0;
 }
-
+#endif
 //------------------------------------------------------------------------------
 /**
  * \return error code for last error. See Sd2Card.h for a list of error codes.
@@ -257,6 +260,7 @@ uint8_t Sd2Card::errorCode(void) {
   return errorCode_;
 }
 
+#ifndef MEMORY_SAVING
 //------------------------------------------------------------------------------
 /**
  * \return error data for last error.
@@ -264,6 +268,7 @@ uint8_t Sd2Card::errorCode(void) {
 uint8_t Sd2Card::errorData(void) {
   return status_;
 }
+#endif
 
 //------------------------------------------------------------------------------
 /**
@@ -367,6 +372,7 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
   chipSelectHigh();
   return false;
 }
+#ifndef MEMORY_SAVING
 //------------------------------------------------------------------------------
 /**
  * Enable or disable partial block reads.
@@ -385,6 +391,7 @@ void Sd2Card::partialBlockRead(uint8_t value) {
   readEnd();
   partialBlockRead_ = value;
 }
+#endif
 //------------------------------------------------------------------------------
 /**
  * Read a 512 byte block from an SD card device.
@@ -576,6 +583,7 @@ uint8_t Sd2Card::waitStartBlock(void) {
   chipSelectHigh();
   return false;
 }
+#ifndef MEMORY_SAVING
 //------------------------------------------------------------------------------
 /**
  * Writes a 512 byte block to an SD card.
@@ -630,6 +638,7 @@ uint8_t Sd2Card::writeData(const uint8_t* src) {
   }
   return writeData(WRITE_MULTIPLE_TOKEN, src);
 }
+#endif
 //------------------------------------------------------------------------------
 // send one block of data for write block or write multiple blocks
 uint8_t Sd2Card::writeData(uint8_t token, const uint8_t* src) {
@@ -666,6 +675,7 @@ uint8_t Sd2Card::writeData(uint8_t token, const uint8_t* src) {
   }
   return true;
 }
+#ifndef MEMORY_SAVING
 //------------------------------------------------------------------------------
 /** Start a write multiple blocks sequence.
  *
@@ -721,6 +731,7 @@ uint8_t Sd2Card::writeStop(void) {
   chipSelectHigh();
   return false;
 }
+#endif
 
 /* Arduino Sdio Library
  * Copyright (C) 2014 by Munehiro Doi
@@ -895,6 +906,7 @@ uint8_t Sd2Card::writeExtDataPort(uint8_t mio, uint8_t func,
 
   return writeExt(arg, src, 512);
 }
+#ifdef MEMORY_SAVING
 //------------------------------------------------------------------------------
 /**
  * Write an extension register space.
@@ -931,3 +943,4 @@ uint8_t Sd2Card::writeExtMask(uint8_t mio, uint8_t func,
 
   return writeExt(arg, src, 1);
 }
+#endif

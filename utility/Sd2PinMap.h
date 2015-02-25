@@ -274,11 +274,10 @@ static const pin_map_t digitalPinMap[] = {
 // uint8_t const SCL_PIN = 6;
 
 // SPI port
-uint8_t const SS_PIN = 1;
-uint8_t const MOSI_PIN = 5;
-uint8_t const MISO_PIN = 4;
-uint8_t const SCK_PIN = 6;
-
+uint8_t const SS_PIN = 3;
+uint8_t const MOSI_PIN = 1;
+uint8_t const MISO_PIN = 0;
+uint8_t const SCK_PIN = 2;
 #define SS_DDR      DDRB
 #define SS_PORT     PORTB
 #define SS_BIT      1
